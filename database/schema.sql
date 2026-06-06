@@ -1,9 +1,6 @@
 -- GitHub Profile Analyzer Database Schema
--- Run this script once to set up the database and table.
-
-CREATE DATABASE IF NOT EXISTS github_analyzer;
-
-USE github_analyzer;
+-- Run this script once to set up the table.
+-- Note: On Aiven cloud, the database (defaultdb) already exists; skip CREATE DATABASE / USE.
 
 CREATE TABLE IF NOT EXISTS profiles (
   id                        INT AUTO_INCREMENT PRIMARY KEY,

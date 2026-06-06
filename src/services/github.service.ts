@@ -17,16 +17,21 @@ export interface GitHubUser {
 }
 
 export async function fetchGitHubProfile(username: string): Promise<GitHubUser> {
+  console.log("url", `${GITHUB_API}/${username}`);
+
   try {
     const response = await axios.get<GitHubUser>(
       `${GITHUB_API}/${username}`,
+
       {
         headers: {
           Accept: "application/vnd.github.v3+json",
           "User-Agent": "github-profile-analyzer",
         },
+        timeout: 5000,
       }
     );
+
     return response.data;
   } catch (error: unknown) {
     if (axios.isAxiosError(error)) {

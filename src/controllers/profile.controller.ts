@@ -62,6 +62,7 @@ export async function analyzeProfile(
 
     // Fetch from GitHub
     const githubData = await fetchGitHubProfile(username);
+    console.log("github ", githubData);
 
     // Calculate insights
     const insights = calculateInsights(
@@ -71,7 +72,13 @@ export async function analyzeProfile(
       githubData.public_repos
     );
 
-    const analyzed_at = new Date();
+    // Convert Date objects to MySQL-compatible datetime strings to avoid
+    // "Incorrect arguments to mysqld_stmt_execute" from the binary protocol.
+    const toMysqlDatetime = (d: Date): string =>
+      d.toISOString().slice(0, 19).replace("T", " ");
+
+    const analyzed_at = toMysqlDatetime(new Date());
+    const account_created_at = toMysqlDatetime(new Date(githubData.created_at));
 
     // Upsert — insert or update if username already exists (UNIQUE constraint)
     const upsertSql = `
@@ -112,7 +119,7 @@ export async function analyzeProfile(
       githubData.public_gists,
       githubData.avatar_url,
       githubData.html_url,
-      githubData.created_at,
+      account_created_at,
       insights.account_age_days,
       insights.followers_following_ratio,
       insights.popularity_score,
@@ -150,9 +157,8 @@ export async function getAllProfiles(
     );
     const offset = (page - 1) * limit;
 
-    const [rows] = await pool.execute(
-      "SELECT * FROM profiles ORDER BY analyzed_at DESC LIMIT ? OFFSET ?",
-      [limit, offset]
+    const [rows] = await pool.query(
+      `SELECT * FROM profiles ORDER BY analyzed_at DESC LIMIT ${limit} OFFSET ${offset}`
     );
 
     const [[countRow]] = await pool.execute<RowDataPacket[]>(
@@ -186,9 +192,8 @@ export async function getTopProfiles(
       Math.max(1, parseInt(String(req.query.limit ?? "10"), 10))
     );
 
-    const [rows] = await pool.execute(
-      "SELECT * FROM profiles ORDER BY popularity_score DESC LIMIT ?",
-      [limit]
+    const [rows] = await pool.query(
+      `SELECT * FROM profiles ORDER BY popularity_score DESC LIMIT ${limit}`
     );
 
     res.status(200).json({
